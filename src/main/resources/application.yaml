@@ -1,1 +1,10 @@
-spring.application.name=spring-boot-security-oauth2-authorization-server
+server:
+  port: 9001
+  servlet:
+    session:
+      cookie:
+        name: AUTHSERVERSESSION
+
+logging:
+  level:
+    org.springframework.security: trace
