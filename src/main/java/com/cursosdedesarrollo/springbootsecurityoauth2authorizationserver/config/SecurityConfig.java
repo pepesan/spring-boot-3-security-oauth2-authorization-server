@@ -121,6 +121,7 @@ public class SecurityConfig {
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                 .redirectUri("http://localhost:8080/login/oauth2/code/oauth2-custom-client")
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)   // mapeará al claim "name"
