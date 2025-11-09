@@ -34,11 +34,15 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.List;
 import java.util.UUID;
 
 @Configuration
@@ -62,6 +66,7 @@ public class SecurityConfig {
                         authorize
                                 .anyRequest().authenticated()
                 )
+                .cors(Customizer.withDefaults())  // 👈 habilitar CORS aquí
                 // Redirect to the login page when not authenticated from the
                 // authorization endpoint
                 .exceptionHandling((exceptions) -> exceptions
@@ -82,6 +87,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests((authorize) -> authorize
                         .anyRequest().authenticated()
                 )
+                .cors(Customizer.withDefaults())  // 👈 y aquí también
                 // Form login handles the redirect to the login page from the
                 // authorization server filter chain
                 .formLogin(Customizer.withDefaults());
@@ -130,7 +136,35 @@ public class SecurityConfig {
                         .requireAuthorizationConsent(true)
                         .build())
                 .build();
-        return new InMemoryRegisteredClientRepository(oidcClient, oidcCustomClient);
+        RegisteredClient angularClient = RegisteredClient.withId(UUID.randomUUID().toString())
+                .clientId("angular-client")
+                // SPA → cliente público → sin secreto
+                .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN) // opcional
+                .redirectUri("http://localhost:4200/auth/callback")
+                .scope(OidcScopes.OPENID)
+                .scope(OidcScopes.PROFILE)
+                .scope(OidcScopes.EMAIL)
+                .clientSettings(ClientSettings.builder()
+                        .requireProofKey(true)              // 👈 obliga PKCE
+                        .requireAuthorizationConsent(false) // no hace falta pantalla de consentimiento
+                        .build())
+                .build();
+        return new InMemoryRegisteredClientRepository(oidcClient, oidcCustomClient, angularClient);
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("http://localhost:4200"));
+        config.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
     @Bean
